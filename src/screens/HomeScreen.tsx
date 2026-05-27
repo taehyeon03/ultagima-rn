@@ -3,7 +3,6 @@ import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, Dimensions, RefreshControl,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import { fetchUVData, getUserLocation, getMockUVData } from '../utils/uvApi';
 import { UVHourData } from '../types';
 
@@ -72,16 +71,26 @@ export default function HomeScreen({ uvIndex, setUvIndex, onNavigate }: Props) {
 
         {lastUpdated ? <Text style={styles.updatedTxt}>📍 {lastUpdated} 기준</Text> : null}
 
-        {/* 슬라이더 */}
-        <Slider
-          style={{ width: '100%', height: 36, marginVertical: 4 }}
-          minimumValue={0} maximumValue={11} step={1}
-          value={uvIndex}
-          onValueChange={setUvIndex}
-          minimumTrackTintColor="#ff9500"
-          maximumTrackTintColor="#e0e0e0"
-          thumbTintColor="#8c5000"
-        />
+        {/* UV 게이지 (API 기반, 읽기 전용) */}
+        <View style={styles.gaugeWrap}>
+          <View style={styles.gaugeBar}>
+            <View style={[styles.gaugeSeg, { flex: 18, backgroundColor: '#FFD600' }]} />
+            <View style={[styles.gaugeSeg, { flex: 27, backgroundColor: '#fdd404' }]} />
+            <View style={[styles.gaugeSeg, { flex: 18, backgroundColor: '#FF9500' }]} />
+            <View style={[styles.gaugeSeg, { flex: 37, backgroundColor: '#ba1a1a' }]} />
+          </View>
+          <View
+            style={[
+              styles.gaugeThumb,
+              {
+                left: `${Math.min(100, Math.max(0, (uvIndex / 11) * 100))}%`,
+                borderColor: status.color,
+              },
+            ]}
+          >
+            <View style={[styles.gaugeThumbDot, { backgroundColor: status.color }]} />
+          </View>
+        </View>
         <View style={styles.scaleRow}>
           {['낮음', '보통', '높음', '매우높음'].map(l => (
             <Text key={l} style={styles.scaleLbl}>{l}</Text>
@@ -159,7 +168,12 @@ const styles = StyleSheet.create({
   levelTag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   levelTagTxt: { fontSize: 9, fontWeight: '800', color: '#fff' },
   updatedTxt: { fontSize: 9, color: '#bbb', marginBottom: 4 },
-  scaleRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, marginTop: -4 },
+  gaugeWrap: { width: '100%', height: 28, justifyContent: 'center', marginVertical: 6, position: 'relative' },
+  gaugeBar: { width: '100%', height: 10, borderRadius: 99, overflow: 'hidden', flexDirection: 'row' },
+  gaugeSeg: { height: '100%' },
+  gaugeThumb: { position: 'absolute', width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 4, alignItems: 'center', justifyContent: 'center', marginLeft: -12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 },
+  gaugeThumbDot: { width: 6, height: 6, borderRadius: 3 },
+  scaleRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, marginTop: 2 },
   scaleLbl: { fontSize: 10, color: '#bbb', fontWeight: '700' },
   alertBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12, marginTop: 8 },
   alertTxt: { fontSize: 11, fontWeight: '700', flex: 1, marginRight: 8 },
