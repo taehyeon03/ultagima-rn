@@ -25,7 +25,6 @@ export default function TimerScreen({ uvIndex }: Props) {
   const initial = mins * 60;
   const [secs, setSecs] = useState(initial);
   const [running, setRunning] = useState(true);
-  const ref = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevMins = useRef(mins);
 
   useEffect(() => {
@@ -37,13 +36,14 @@ export default function TimerScreen({ uvIndex }: Props) {
   }, [mins]);
 
   useEffect(() => {
-    if (running && secs > 0) {
-      ref.current = setInterval(() => setSecs(p => p - 1), 1000);
-    } else {
-      if (ref.current) clearInterval(ref.current);
-    }
-    return () => { if (ref.current) clearInterval(ref.current); };
-  }, [running, secs]);
+    if (!running) return;
+    const id = setInterval(() => setSecs(p => Math.max(0, p - 1)), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  useEffect(() => {
+    if (secs === 0 && running) setRunning(false);
+  }, [secs, running]);
 
   const done = secs === 0;
   const radius = 100;
