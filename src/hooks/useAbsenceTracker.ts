@@ -111,7 +111,8 @@ async function scheduleAbsenceNotifications() {
 const LAST_VISIT_KEY = 'ultagima_lastVisit';
 
 export function useAbsenceTracker() {
-  const [absenceLevel, setAbsenceLevel] = useState<AbsenceLevel>(0);
+  // bannerLevel: 부재 기간으로 계산된 레벨 (배너 표시용으로만 사용)
+  const [bannerLevel, setBannerLevel] = useState<AbsenceLevel>(0);
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
@@ -123,8 +124,10 @@ export function useAbsenceTracker() {
         const lastMs = parseInt(lastStr, 10);
         if (!isNaN(lastMs)) {
           const level = calcAbsenceLevel(lastMs);
-          setAbsenceLevel(level);
-          if (level > 0) setShowBanner(true);
+          if (level > 0) {
+            setBannerLevel(level);
+            setShowBanner(true);
+          }
         }
       }
 
@@ -134,5 +137,8 @@ export function useAbsenceTracker() {
   }, []);
 
   const dismissBanner = () => setShowBanner(false);
-  return { absenceLevel, showBanner, dismissBanner };
+
+  // 사용자가 앱에 들어온 시점부터는 부재 끝. 헤더는 항상 0단계로 표시.
+  // 부재 사실은 배너로만 알려주고, 헤더 아이콘/링/뱃지는 깨끗한 상태.
+  return { absenceLevel: 0 as AbsenceLevel, bannerLevel, showBanner, dismissBanner };
 }
