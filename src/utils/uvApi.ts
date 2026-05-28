@@ -14,20 +14,43 @@ function getUVColor(uv: number): string {
   return '#ba1a1a';
 }
 
+const SEOUL = { lat: 37.5665, lon: 126.978 };
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+  ]);
+}
+
 export async function getUserLocation(): Promise<{ lat: number; lon: number }> {
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return { lat: 37.5665, lon: 126.978 };
-    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    if (status !== 'granted') return SEOUL;
+
+    const last = await Location.getLastKnownPositionAsync();
+    if (last) return { lat: last.coords.latitude, lon: last.coords.longitude };
+
+    const loc = await withTimeout(
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest }),
+      5000,
+    );
     return { lat: loc.coords.latitude, lon: loc.coords.longitude };
   } catch {
-    return { lat: 37.5665, lon: 126.978 };
+    return SEOUL;
   }
 }
 
 export async function fetchUVData(lat: number, lon: number): Promise<UVApiResult> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=uv_index&hourly=uv_index&timezone=auto&forecast_days=1`;
-  const res = await fetch(url);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 

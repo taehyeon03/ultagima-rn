@@ -26,13 +26,13 @@ const ringColor: Record<AbsenceLevel, string> = {
 function AppContent() {
   const [uvIndex, setUvIndex] = useState(0);
   const [userSkinType, setUserSkinType] = useState('DSPW');
-  const { absenceLevel, showBanner, dismissBanner } = useAbsenceTracker();
+  const { absenceLevel, bannerLevel, showBanner, dismissBanner } = useAbsenceTracker();
   const insets = useSafeAreaInsets();
 
   return (
     <>
       <StatusBar style="dark" />
-      {showBanner && <AbsenceBanner level={absenceLevel} onDismiss={dismissBanner} />}
+      {showBanner && <AbsenceBanner level={bannerLevel} onDismiss={dismissBanner} />}
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={({ route }) => ({
