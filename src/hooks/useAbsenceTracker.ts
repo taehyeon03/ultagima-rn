@@ -40,6 +40,12 @@ Notifications.setNotificationHandler({
   }),
 });
 
+/** 알림 트리거 시각이 야간(21시~6시)이면 true — UV가 사실상 0~1이라 알림 무의미 */
+function isNightHour(delayMs: number): boolean {
+  const hour = new Date(Date.now() + delayMs).getHours();
+  return hour >= 21 || hour < 6;
+}
+
 async function scheduleAbsenceNotifications() {
   try {
     const { status } = await Notifications.requestPermissionsAsync();
@@ -48,16 +54,37 @@ async function scheduleAbsenceNotifications() {
     // 기존 예약 알림 취소
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const notifications = [
-      { seconds: TWO_HOURS / 1000,   title: '피부가 걱정돼요 😟',   body: '2시간 동안 얼타지마를 안 여셨어요. 선크림 재도포 잊지 마세요!' },
-      { seconds: FIVE_HOURS / 1000,  title: '선크림 잊으셨나요? 😫', body: '5시간이나 지났어요! 자외선이 피부를 공격하고 있어요.' },
-      { seconds: SEVEN_HOURS / 1000, title: '🚨 피부 긴급 경보!',    body: '7시간 동안 얼타지마를 방치하셨어요! 지금 바로 확인하세요!' },
+    const allNotifications = [
+      {
+        delayMs: TWO_HOURS,
+        title: '피부가 걱정돼요 😟',
+        body: '2시간 동안 얼타지마를 안 여셨어요. 선크림 재도포 잊지 마세요!',
+        color: '#FF9500', // stage1 — Android 상단바 작은 아이콘 tint
+      },
+      {
+        delayMs: FIVE_HOURS,
+        title: '선크림 잊으셨나요? 😫',
+        body: '5시간이나 지났어요! 자외선이 피부를 공격하고 있어요.',
+        color: '#e07000', // stage2
+      },
+      {
+        delayMs: SEVEN_HOURS,
+        title: '🚨 피부 긴급 경보!',
+        body: '7시간 동안 얼타지마를 방치하셨어요! 지금 바로 확인하세요!',
+        color: '#ba1a1a', // stage3
+      },
     ];
 
-    for (const n of notifications) {
+    const daytimeNotifications = allNotifications.filter((n) => !isNightHour(n.delayMs));
+
+    for (const n of daytimeNotifications) {
       await Notifications.scheduleNotificationAsync({
-        content: { title: n.title, body: n.body, sound: true },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: n.seconds, repeats: false },
+        content: { title: n.title, body: n.body, sound: true, color: n.color },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: n.delayMs / 1000,
+          repeats: false,
+        },
       });
     }
   } catch (e) {
