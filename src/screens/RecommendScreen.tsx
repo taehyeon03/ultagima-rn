@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Linking } from 'react-native';
 
 interface Props { userSkinType: string; onNavigate: (s: string) => void; }
 
@@ -53,7 +53,10 @@ export default function RecommendScreen({ userSkinType, onNavigate }: Props) {
             <Text style={styles.productDesc}>{p.desc}</Text>
             <View style={styles.priceRow}>
               <Text style={styles.price}>₩{p.price.toLocaleString()}</Text>
-              <TouchableOpacity style={styles.buyBtn} onPress={() => Alert.alert('알림', `${p.name}이 장바구니에 담겼습니다.`)}>
+              <TouchableOpacity style={styles.buyBtn} onPress={() => {
+                const url = `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(p.name)}`;
+                Linking.openURL(url).catch(() => Alert.alert('오류', '구매 링크를 열 수 없습니다.'));
+              }}>
                 <Text style={styles.buyTxt}>구매하기 ↗</Text>
               </TouchableOpacity>
             </View>

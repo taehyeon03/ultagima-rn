@@ -24,8 +24,8 @@ export default function SurveyScreen({ onNavigate, setUserSkinType }: Props) {
     (async () => {
       const keys = ['moistureType','sensitivityType','pigmentType','wrinkleType'];
       const saved: Record<number,string> = {};
-      const vals = await AsyncStorage.getMany(keys);
-      keys.forEach((k, i) => { if (vals[k]) saved[i + 1] = vals[k] as string; });
+      const vals = await AsyncStorage.multiGet(keys);
+      vals.forEach(([, v], i) => { if (v) saved[i + 1] = v; });
       setAnswers(saved);
     })();
   }, []);
@@ -43,7 +43,8 @@ export default function SurveyScreen({ onNavigate, setUserSkinType }: Props) {
     if (s) entries['sensitivityType'] = s;
     if (p) entries['pigmentType'] = p;
     if (w) entries['wrinkleType'] = w;
-    if (Object.keys(entries).length > 0) await AsyncStorage.setMany(entries);
+    const pairs = Object.entries(entries);
+    if (pairs.length > 0) await AsyncStorage.multiSet(pairs);
     if (m && s && p && w) {
       const code4 = [m, s, p, w].join('');
       const detail = { ...(skinTypeData[code4] ?? { code: code4, summary: [m,s,p,w].map(c=>labels[c]).join(' · ') }), cleansingRoutine: generateCleansingRoutine(code4) };

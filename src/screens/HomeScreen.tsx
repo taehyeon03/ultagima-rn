@@ -59,17 +59,22 @@ export default function HomeScreen({ uvIndex, setUvIndex, onNavigate }: Props) {
             {loading && <ActivityIndicator size="small" color="#ff9500" style={{ marginRight: 6 }} />}
             {isRealtime && <Text style={styles.realtimeBadge}>실시간</Text>}
             {!isRealtime && !loading && <Text style={styles.fallbackBadge}>추정값</Text>}
-            <View style={styles.uvBadge}>
-              <Text style={styles.uvNum}>{uvIndex}</Text>
-              <Text style={styles.uvDen}>/11</Text>
-              <View style={[styles.levelTag, { backgroundColor: status.color }]}>
-                <Text style={styles.levelTagTxt}>{status.label}</Text>
-              </View>
-            </View>
           </View>
         </View>
 
-        {lastUpdated ? <Text style={styles.updatedTxt}>📍 {lastUpdated} 기준</Text> : null}
+        {/* 큰 숫자 (날씨앱 스타일) */}
+        <View style={styles.heroRow}>
+          <View style={styles.heroNumWrap}>
+            <Text style={[styles.heroNum, { color: status.color === '#ffe171' ? '#e0a800' : status.color }]}>{uvIndex}</Text>
+            <Text style={styles.heroDen}>/ 11</Text>
+          </View>
+          <View style={styles.heroRight}>
+            <View style={[styles.levelTag, { backgroundColor: status.color }]}>
+              <Text style={styles.levelTagTxt}>{status.label}</Text>
+            </View>
+            {lastUpdated ? <Text style={styles.updatedTxt}>📍 {lastUpdated} 기준</Text> : null}
+          </View>
+        </View>
 
         {/* UV 게이지 (API 기반, 읽기 전용) */}
         <View style={styles.gaugeWrap}>
@@ -167,7 +172,12 @@ const styles = StyleSheet.create({
   uvDen: { fontSize: 10, color: '#aaa', fontWeight: '700', marginRight: 6 },
   levelTag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   levelTagTxt: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  updatedTxt: { fontSize: 9, color: '#bbb', marginBottom: 4 },
+  updatedTxt: { fontSize: 9, color: '#bbb', marginTop: 4 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 6 },
+  heroNumWrap: { flexDirection: 'row', alignItems: 'baseline' },
+  heroNum: { fontSize: 72, fontWeight: '900', fontVariant: ['tabular-nums'], lineHeight: 78 },
+  heroDen: { fontSize: 20, fontWeight: '800', color: '#ccc', marginLeft: 6 },
+  heroRight: { alignItems: 'flex-end' },
   gaugeWrap: { width: '100%', height: 28, justifyContent: 'center', marginVertical: 6, position: 'relative' },
   gaugeBar: { width: '100%', height: 10, borderRadius: 99, overflow: 'hidden', flexDirection: 'row' },
   gaugeSeg: { height: '100%' },
