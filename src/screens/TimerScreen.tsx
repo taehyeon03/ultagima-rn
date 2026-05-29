@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Props { uvIndex: number }
+
+const SOUND_OPTIONS = ['🔔 기본음', '🎵 벨소리', '📳 진동만', '🔕 무음'];
 
 function getMinutes(uv: number, smart: boolean): number {
   if (!smart) return 120;
@@ -23,6 +26,22 @@ export default function TimerScreen({ uvIndex }: Props) {
   const [smart, setSmart] = useState(true);
   const [manualMins, setManualMins] = useState(120);
   const mins = smart ? getMinutes(uvIndex, true) : manualMins;
+
+  // 알림 소리: 탭하면 옵션을 순환하고 선택값을 저장
+  const [soundIdx, setSoundIdx] = useState(0);
+  useEffect(() => {
+    AsyncStorage.getItem('timerSound').then(v => {
+      const i = v ? parseInt(v, 10) : 0;
+      if (!isNaN(i) && i >= 0 && i < SOUND_OPTIONS.length) setSoundIdx(i);
+    });
+  }, []);
+  const cycleSound = () => {
+    setSoundIdx(prev => {
+      const next = (prev + 1) % SOUND_OPTIONS.length;
+      AsyncStorage.setItem('timerSound', String(next));
+      return next;
+    });
+  };
   const initial = mins * 60;
   const [secs, setSecs] = useState(initial);
   const [running, setRunning] = useState(true);
@@ -98,10 +117,11 @@ export default function TimerScreen({ uvIndex }: Props) {
           <Text style={styles.infoValue}>{mins}분</Text>
           <Text style={styles.infoSub}>{smart ? `UV ${uvIndex} 기준 (스마트)` : '직접 설정'}</Text>
         </View>
-        <View style={styles.infoCard}>
+        <TouchableOpacity style={styles.infoCard} onPress={cycleSound} activeOpacity={0.7}>
           <Text style={styles.infoLabel}>알림 소리</Text>
-          <Text style={styles.infoValue}>🔔 기본음</Text>
-        </View>
+          <Text style={styles.infoValueSm}>{SOUND_OPTIONS[soundIdx]}</Text>
+          <Text style={styles.infoSub}>탭하여 변경</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 스마트 알림 토글 */}
@@ -169,6 +189,7 @@ const styles = StyleSheet.create({
   infoCard: { flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
   infoLabel: { fontSize: 11, color: '#aaa', fontWeight: '600' },
   infoValue: { fontSize: 22, fontWeight: '800', color: '#8c5000', marginTop: 2 },
+  infoValueSm: { fontSize: 15, fontWeight: '800', color: '#8c5000', marginTop: 6 },
   infoSub: { fontSize: 9, color: '#bbb', marginTop: 2 },
   smartCard: { backgroundColor: '#ffe171', borderRadius: 14, padding: 16, marginTop: 12, flexDirection: 'row', alignItems: 'center' },
   smartIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fdd404', justifyContent: 'center', alignItems: 'center' },
