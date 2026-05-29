@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { skinTypeData, generateCleansingRoutine, SkinTypeDetail, CleansingRoutine } from '../data/skinTypeData';
 
@@ -12,17 +13,20 @@ export default function CleansingScreen({ onNavigate }: Props) {
   const [routine, setRoutine] = useState<CleansingRoutine | null>(null);
   const [cat, setCat] = useState<Cat>('all');
 
-  useEffect(() => {
-    (async () => {
-      const c = await AsyncStorage.getItem('skinTypeCode');
-      const raw = await AsyncStorage.getItem('skinTypeDetail');
-      let d: SkinTypeDetail | null = null;
-      if (raw) { try { d = JSON.parse(raw); } catch { d = c ? skinTypeData[c] ?? null : null; } }
-      else if (c) { d = skinTypeData[c] ?? null; }
-      setCode(c); setDetail(d);
-      if (c) setRoutine(generateCleansingRoutine(c));
-    })();
-  }, []);
+  // 화면에 다시 진입할 때마다 저장된 피부 타입을 다시 읽어와, 설문 후 즉시 반영되게 함
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        const c = await AsyncStorage.getItem('skinTypeCode');
+        const raw = await AsyncStorage.getItem('skinTypeDetail');
+        let d: SkinTypeDetail | null = null;
+        if (raw) { try { d = JSON.parse(raw); } catch { d = c ? skinTypeData[c] ?? null : null; } }
+        else if (c) { d = skinTypeData[c] ?? null; }
+        setCode(c); setDetail(d);
+        setRoutine(c ? generateCleansingRoutine(c) : null);
+      })();
+    }, []),
+  );
 
   const cards = useMemo(() => {
     if (!detail || !routine) return [];

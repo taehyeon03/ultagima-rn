@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +29,11 @@ function AppContent() {
   const [userSkinType, setUserSkinType] = useState('DSPW');
   const { absenceLevel, bannerLevel, showBanner, dismissBanner } = useAbsenceTracker();
   const insets = useSafeAreaInsets();
+
+  // 앱 시작 시 저장된 피부 타입을 불러와 추천/세안법 화면에 즉시 반영
+  useEffect(() => {
+    AsyncStorage.getItem('skinTypeCode').then(c => { if (c) setUserSkinType(c); });
+  }, []);
 
   return (
     <>
@@ -72,7 +78,16 @@ function AppContent() {
           })}
         >
           <Tab.Screen name="홈">
-            {() => <HomeScreen uvIndex={uvIndex} setUvIndex={setUvIndex} onNavigate={() => {}} />}
+            {({ navigation }) => (
+              <HomeScreen
+                uvIndex={uvIndex}
+                setUvIndex={setUvIndex}
+                onNavigate={(s) => {
+                  if (s === 'survey') navigation.navigate('피부설정' as never);
+                  else if (s === 'timer') navigation.navigate('타이머' as never);
+                }}
+              />
+            )}
           </Tab.Screen>
           <Tab.Screen name="타이머">
             {() => <TimerScreen uvIndex={uvIndex} />}

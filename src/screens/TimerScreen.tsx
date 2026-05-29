@@ -21,7 +21,8 @@ function fmt(secs: number) {
 
 export default function TimerScreen({ uvIndex }: Props) {
   const [smart, setSmart] = useState(true);
-  const mins = getMinutes(uvIndex, smart);
+  const [manualMins, setManualMins] = useState(120);
+  const mins = smart ? getMinutes(uvIndex, true) : manualMins;
   const initial = mins * 60;
   const [secs, setSecs] = useState(initial);
   const [running, setRunning] = useState(true);
@@ -95,7 +96,7 @@ export default function TimerScreen({ uvIndex }: Props) {
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>재도포 주기</Text>
           <Text style={styles.infoValue}>{mins}분</Text>
-          <Text style={styles.infoSub}>UV {uvIndex} 기준{smart ? ' (스마트)' : ''}</Text>
+          <Text style={styles.infoSub}>{smart ? `UV ${uvIndex} 기준 (스마트)` : '직접 설정'}</Text>
         </View>
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>알림 소리</Text>
@@ -116,6 +117,32 @@ export default function TimerScreen({ uvIndex }: Props) {
         <Switch value={smart} onValueChange={setSmart}
           trackColor={{ false: '#ccc', true: '#8c5000' }} thumbColor="#fff" />
       </View>
+
+      {/* 재도포 주기 직접 설정 (스마트 알림 OFF일 때) */}
+      {!smart && (
+        <View style={styles.manualCard}>
+          <Text style={styles.manualTitle}>⏱ 재도포 주기 직접 설정</Text>
+          <View style={styles.stepperRow}>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => setManualMins(m => Math.max(10, m - 10))}>
+              <Text style={styles.stepBtnTxt}>−</Text>
+            </TouchableOpacity>
+            <View style={styles.stepValueWrap}>
+              <Text style={styles.stepValue}>{manualMins}</Text>
+              <Text style={styles.stepUnit}>분</Text>
+            </View>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => setManualMins(m => Math.min(240, m + 10))}>
+              <Text style={styles.stepBtnTxt}>+</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.presetRow}>
+            {[30, 60, 90, 120, 180].map(p => (
+              <TouchableOpacity key={p} style={[styles.preset, manualMins === p && styles.presetActive]} onPress={() => setManualMins(p)}>
+                <Text style={[styles.presetTxt, manualMins === p && styles.presetTxtActive]}>{p}분</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
 
       <View style={{ height: 20 }} />
     </ScrollView>
@@ -148,4 +175,17 @@ const styles = StyleSheet.create({
   smartTitle: { fontSize: 14, fontWeight: '700', color: '#2d1600' },
   smartSub: { fontSize: 11, color: 'rgba(45,22,0,0.7)', marginTop: 2 },
   smartHint: { fontSize: 9, color: 'rgba(45,22,0,0.5)', marginTop: 2 },
+  manualCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginTop: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  manualTitle: { fontSize: 13, fontWeight: '800', color: '#1a1a1a', marginBottom: 12 },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
+  stepBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff3db', justifyContent: 'center', alignItems: 'center' },
+  stepBtnTxt: { fontSize: 26, fontWeight: '900', color: '#8c5000', lineHeight: 28 },
+  stepValueWrap: { flexDirection: 'row', alignItems: 'baseline', minWidth: 90, justifyContent: 'center' },
+  stepValue: { fontSize: 36, fontWeight: '900', color: '#8c5000', fontVariant: ['tabular-nums'] },
+  stepUnit: { fontSize: 14, fontWeight: '800', color: '#aaa', marginLeft: 4 },
+  presetRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6, marginTop: 14 },
+  preset: { flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: '#faf9f6', borderWidth: 1, borderColor: '#eee', alignItems: 'center' },
+  presetActive: { backgroundColor: '#ff9500', borderColor: '#ff9500' },
+  presetTxt: { fontSize: 11, fontWeight: '800', color: '#888' },
+  presetTxtActive: { color: '#fff' },
 });
