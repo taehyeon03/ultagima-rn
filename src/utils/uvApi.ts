@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UVHourData } from '../types';
 
 export interface UVApiResult {
@@ -16,6 +17,12 @@ function getUVColor(uv: number): string {
 
 const SEOUL = { lat: 37.5665, lon: 126.978 };
 
+// 위치는 한 번만 가져와 캐시(메모리 + AsyncStorage)에서 재사용한다.
+// 지역 단위(소수점 2자리 ≈ 1km)면 충분하므로 정확한 좌표는 저장하지 않는다.
+const LOCATION_KEY = 'cachedLocation';
+const LOCATION_TTL = 60 * 60 * 1000; // 1시간
+let cachedLocation: { lat: number; lon: number } | null = null;
+
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     p,
@@ -24,18 +31,42 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 export async function getUserLocation(): Promise<{ lat: number; lon: number }> {
+  // 1) 메모리 캐시 — 앱 실행 중 재요청 시 즉시 반환
+  if (cachedLocation) return cachedLocation;
+
+  // 2) 저장된 캐시 — TTL 이내면 GPS를 다시 켜지 않음
+  try {
+    const stored = await AsyncStorage.getItem(LOCATION_KEY);
+    if (stored) {
+      const p = JSON.parse(stored);
+      if (typeof p?.lat === 'number' && typeof p?.lon === 'number' &&
+          typeof p?.ts === 'number' && Date.now() - p.ts < LOCATION_TTL) {
+        cachedLocation = { lat: p.lat, lon: p.lon };
+        return cachedLocation;
+      }
+    }
+  } catch {}
+
+  // 3) 실제 측정 — 지역 단위로만, 저전력
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') return SEOUL;
 
     const last = await Location.getLastKnownPositionAsync();
-    if (last) return { lat: last.coords.latitude, lon: last.coords.longitude };
+    const coords = last
+      ? last.coords
+      : (await withTimeout(
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low }),
+          5000,
+        )).coords;
 
-    const loc = await withTimeout(
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest }),
-      5000,
-    );
-    return { lat: loc.coords.latitude, lon: loc.coords.longitude };
+    const region = {
+      lat: Math.round(coords.latitude * 100) / 100,
+      lon: Math.round(coords.longitude * 100) / 100,
+    };
+    cachedLocation = region;
+    AsyncStorage.setItem(LOCATION_KEY, JSON.stringify({ ...region, ts: Date.now() })).catch(() => {});
+    return region;
   } catch {
     return SEOUL;
   }
